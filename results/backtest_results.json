@@ -1,0 +1,20 @@
+{
+    "start_date": "2020-04-06",
+    "end_date": "2024-05-07",
+    "time_taken_seconds": 88.26,
+    "statistics": {
+        "initial_balance": 1000,
+        "final_balance": 1183.9038065967295,
+        "net_profit": 183.9038065967295,
+        "return_percent": 18.390380659672957,
+        "total_trades": 1033,
+        "winning_trades": 324,
+        "losing_trades": 709,
+        "win_rate": 31.364956437560505,
+        "gross_profit": 3236.5876922741263,
+        "gross_loss": 3052.6838856774,
+        "average_winning_trade": 9.989468186031255,
+        "average_losing_trade": 4.305619020701552,
+        "maximum_drawdown": 31.12013600732776
+    }
+}

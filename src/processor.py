@@ -1,42 +1,44 @@
-import src.loader as loader
+ #still dont know what pylance did here
 import pandas as pd
 
 def process(df_5m ,df_1h):
     df_1h["ema_1h"] = df_1h["close"].ewm(span=13, adjust=False).mean()
-    rows = []
 
-    for _, candle_5m in df_5m.iterrows():
-        current_time = candle_5m["open_time"]
+    df_5m["lookup_1h_time"] = df_5m["open_time"].dt.floor("h") - pd.Timedelta(hours=1)
 
-        #pick out the previous 1 hour candle before current 5minute timeframe to avoid look ahead bias
-        candle_1h = df_1h[df_1h["open_time"] == current_time.floor("h") - pd.Timedelta(hours=1)]
-        
-        #keep the 1h vacnat if data doesnt exists
-        if candle_1h.empty:
-            continue
+        # Rename 1h columns to avoid conflicts
+    df_1h = df_1h.rename(columns={
+        "open_time": "lookup_1h_time",
+        "open": "open_1h",
+        "high": "high_1h",
+        "low": "low_1h",
+        "close": "close_1h"
+    })
 
-        #convert to series type from dataframe
-        candle_1h = candle_1h.iloc[0]
+    # Merge
+    df_strategy = df_5m.merge(
+        df_1h[
+            [
+                "lookup_1h_time",
+                "open_1h",
+                "high_1h",
+                "low_1h",
+                "close_1h",
+                "ema_1h"
+            ]
+        ],
+        on="lookup_1h_time",
+        how="left"
+    )
 
-        rows.append({
-            # 5minute information
-                    "open_time": candle_5m["open_time"],
-                    "close_time": candle_5m["close_time"],
-                    "open_5m": candle_5m["open"],
-                    "high_5m": candle_5m["high"],
-                    "low_5m": candle_5m["low"],
-                    "close_5m": candle_5m["close"],
-                    
-            
-                    # 1H information
-                    "open_1h": candle_1h["open"],
-                    "high_1h": candle_1h["high"],
-                    "low_1h": candle_1h["low"],
-                    "close_1h": candle_1h["close"],
-                    "ema_1h": candle_1h["ema_1h"]
-                    
-        })
-    df_strategy = pd.DataFrame(rows)
+    # Keep exact output format
+    df_strategy = df_strategy.rename(columns={
+        "open": "open_5m",
+        "high": "high_5m",
+        "low": "low_5m",
+        "close": "close_5m"
+    })
+
     #calculate EMA
     df_strategy["ema_fast"] = df_strategy["close_5m"].ewm(span=5, adjust=False).mean()
     df_strategy["ema_slow"] = df_strategy["close_5m"].ewm(span=20, adjust=False).mean()
@@ -60,6 +62,7 @@ def process(df_5m ,df_1h):
     return df_strategy
 
 if __name__ == "__main__":
+    import loader as loader
     df_5m,df_1h = loader.load_data("2023-4-6","2023-4-7")
     df_strategy = process(df_5m,df_1h)
     

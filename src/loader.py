@@ -2,6 +2,7 @@ import pandas as pd
 import glob
 import random
 from pathlib import Path
+
 def load_data(start_date , end_date):
     BASE_DIR = Path(__file__).resolve().parent.parent
 
