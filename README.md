@@ -40,7 +40,7 @@ trading_bot/
 Clone the repository:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/aungkhanthmue809/btc-backtester-demo.git
 cd trading_bot
 ```
 
