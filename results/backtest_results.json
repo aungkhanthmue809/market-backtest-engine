@@ -1,20 +1,102 @@
-{
-    "start_date": "2020-04-06",
-    "end_date": "2024-05-07",
-    "time_taken_seconds": 88.26,
-    "statistics": {
-        "initial_balance": 1000,
-        "final_balance": 1183.9038065967295,
-        "net_profit": 183.9038065967295,
-        "return_percent": 18.390380659672957,
-        "total_trades": 1033,
-        "winning_trades": 324,
-        "losing_trades": 709,
-        "win_rate": 31.364956437560505,
-        "gross_profit": 3236.5876922741263,
-        "gross_loss": 3052.6838856774,
-        "average_winning_trade": 9.989468186031255,
-        "average_losing_trade": 4.305619020701552,
-        "maximum_drawdown": 31.12013600732776
+[
+    {
+        "start_date": "2020-04-06",
+        "end_date": "2023-05-07",
+        "time_taken_seconds": 74.4,
+        "statistics": {
+            "initial_balance": 1000,
+            "final_balance": 1118.9530183418497,
+            "net_profit": 118.95301834184966,
+            "return_percent": 11.895301834184968,
+            "total_trades": 765,
+            "winning_trades": 246,
+            "losing_trades": 519,
+            "win_rate": 32.15686274509804,
+            "gross_profit": 2583.9488459984927,
+            "gross_loss": 2464.9958276566435,
+            "average_winning_trade": 10.503857097554848,
+            "average_losing_trade": 4.749510265234381,
+            "maximum_drawdown": 31.12013600732773
+        }
+    },
+    {
+        "start_date": "2020-04-06",
+        "end_date": "2023-05-07",
+        "time_taken_seconds": 74.33,
+        "statistics": {
+            "initial_balance": 1000,
+            "final_balance": 383.18851963492386,
+            "net_profit": -616.8114803650761,
+            "return_percent": -61.681148036507615,
+            "total_trades": 765,
+            "winning_trades": 189,
+            "losing_trades": 576,
+            "win_rate": 24.705882352941178,
+            "gross_profit": 1424.070897864277,
+            "gross_loss": 2040.8823782293537,
+            "average_winning_trade": 7.534766655366544,
+            "average_losing_trade": 3.54319857331485,
+            "maximum_drawdown": 64.90220849234836
+        }
+    },
+    {
+        "start_date": "2023-04-06",
+        "end_date": "2024-05-07",
+        "time_taken_seconds": 30.91,
+        "statistics": {
+            "initial_balance": 1000,
+            "final_balance": 707.5723365621017,
+            "net_profit": -292.42766343789833,
+            "return_percent": -29.242766343789828,
+            "total_trades": 282,
+            "winning_trades": 57,
+            "losing_trades": 225,
+            "win_rate": 20.212765957446805,
+            "gross_profit": 404.19639266132015,
+            "gross_loss": 696.6240560992189,
+            "average_winning_trade": 7.091164783531933,
+            "average_losing_trade": 3.0961069159965287,
+            "maximum_drawdown": 32.08254070309347
+        }
+    },
+    {
+        "start_date": "2023-04-06",
+        "end_date": "2024-05-07",
+        "time_taken_seconds": 25.78,
+        "statistics": {
+            "initial_balance": 1000,
+            "final_balance": 1050.32328933513,
+            "net_profit": 50.323289335130085,
+            "return_percent": 5.0323289335130195,
+            "total_trades": 282,
+            "winning_trades": 81,
+            "losing_trades": 201,
+            "win_rate": 28.723404255319153,
+            "gross_profit": 602.4675027210093,
+            "gross_loss": 552.1442133858786,
+            "average_winning_trade": 7.437870403963077,
+            "average_losing_trade": 2.7469861362481525,
+            "maximum_drawdown": 10.017028967239632
+        }
+    },
+    {
+        "start_date": "2023-04-06",
+        "end_date": "2024-05-07",
+        "time_taken_seconds": 25.42,
+        "statistics": {
+            "initial_balance": 1000,
+            "final_balance": 707.5723365621017,
+            "net_profit": -292.42766343789833,
+            "return_percent": -29.242766343789828,
+            "total_trades": 282,
+            "winning_trades": 57,
+            "losing_trades": 225,
+            "win_rate": 20.212765957446805,
+            "gross_profit": 404.19639266132015,
+            "gross_loss": 696.6240560992189,
+            "average_winning_trade": 7.091164783531933,
+            "average_losing_trade": 3.0961069159965287,
+            "maximum_drawdown": 32.08254070309347
+        }
     }
-}
+]

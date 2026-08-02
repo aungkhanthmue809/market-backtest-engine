@@ -1,7 +1,8 @@
 import streamlit as st
 import time
 import json
-from engine import calculate
+import importlib
+import engine
 
 
 st.set_page_config(
@@ -31,15 +32,21 @@ with col2:
 
 run = st.button("Run Backtest")
 
+with open("config.json", "r") as file:
+    config = json.load(file)
 
 if run:
     start = time.time()
 
     with st.spinner("Running backtest..."):
 
-        times, balances, stats = calculate(
+        # Reload engine.py so changes apply without restarting Streamlit
+        importlib.reload(engine)
+
+        times, balances, stats = engine.calculate(
             start_date,
-            end_date
+            end_date,
+            config
         )
 
     end = time.time()
@@ -49,19 +56,41 @@ if run:
     st.success("Finished")
 
 
-    # Save results to JSON
-    results = {
+    # Save results to JSON (keep latest 10 results)
+
+    results_file = "results/backtest_results.json"
+
+    new_result = {
         "start_date": start_date,
         "end_date": end_date,
         "time_taken_seconds": round(elapsed_time, 2),
         "statistics": stats
     }
 
-    with open("results/backtest_results.json", "w") as file:
-        json.dump(results, file, indent=4)
+    try:
+        with open(results_file, "r") as file:
+            old_results = json.load(file)
+
+        # Support old format (single dictionary result)
+        if isinstance(old_results, dict):
+            old_results = [old_results]
+
+    except (FileNotFoundError, json.JSONDecodeError):
+        old_results = []
+
+
+    old_results.append(new_result)
+
+    # Keep latest 10 results
+    old_results = old_results[-10:]
+
+
+    with open(results_file, "w") as file:
+        json.dump(old_results, file, indent=4)
 
 
     # Completion sound
+
     with open("done.mp3", "rb") as audio_file:
         audio_bytes = audio_file.read()
 
@@ -73,6 +102,7 @@ if run:
 
 
     # Balance graph
+
     st.subheader("Balance Curve")
 
     chart_data = {
@@ -88,8 +118,9 @@ if run:
 
 
     # Statistics
-    # Statistics
+
     st.subheader("Statistics")
+
 
     # Row 1
     c1, c2, c3, c4 = st.columns(4)
@@ -99,6 +130,7 @@ if run:
     c3.metric("Net Profit", f"${stats['net_profit']:.2f}")
     c4.metric("Return", f"{stats['return_percent']:.2f}%")
 
+
     # Row 2
     c1, c2, c3, c4 = st.columns(4)
 
@@ -107,6 +139,7 @@ if run:
     c3.metric("Losing Trades", stats["losing_trades"])
     c4.metric("Win Rate", f"{stats['win_rate']:.2f}%")
 
+
     # Row 3
     c1, c2, c3, c4 = st.columns(4)
 
@@ -114,6 +147,7 @@ if run:
     c2.metric("Gross Loss", f"${stats['gross_loss']:.2f}")
     c3.metric("Average Winning Trade", f"${stats['average_winning_trade']:.2f}")
     c4.metric("Average Losing Trade", f"${stats['average_losing_trade']:.2f}")
+
 
     # Row 4
     c1, c2 = st.columns(2)

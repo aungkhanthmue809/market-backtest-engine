@@ -2,22 +2,31 @@ import src.loader as loader
 import src.processor as processor
 import matplotlib.pyplot as plt
 
-def calculate(start_date , end_date):
-    df_5m ,df_1h = loader.load_data(start_date,end_date)
-    df_data = processor.process(df_5m,df_1h)
+
+def calculate(start_date, end_date, config):
+    df_5m, df_1h = loader.load_data(start_date, end_date)
+    df_data = processor.process(df_5m, df_1h)
+
+    fee_rate = config["fee_rate"]
+    slippage = config["slippage"]
+    initial_balance = config["initial_balance"]
 
     total_trades = 0
     in_position = False
-    initial_balance = 1000
+
     final_balance = initial_balance
     balance_history = [final_balance]
     time_history = [df_data.iloc[2]["open_time"]]
+
     profit = 0
     entry_price = 0
+
     winning_trades = 0
     losing_trades = 0
+
     gross_profit = 0
     gross_loss = 0
+
     peak_balance = initial_balance
     max_drawdown = 0.0
 
@@ -35,16 +44,33 @@ def calculate(start_date , end_date):
         is_bullish_1h = candle_1["close_1h"] > candle_1["ema_1h"]
 
         if ema_crossed_up and (candle_1["RSI"] > 60) and not in_position :#and is_bullish_1h:
-            entry_price = candle_2["open_5m"]
+            #The buying
+            entry_price = candle_2["open_5m"]* (1 + slippage)
+
             print(f"entry price: {entry_price}")
             in_position = True
 
         elif ema_crossed_down and in_position :#and not is_bullish_1h:
-            exit_price = candle_2["open_5m"]
+            #THE selling
+            exit_price = candle_2["open_5m"] * (1 - slippage)
+
             print(f"exit price: {exit_price}")
-            profit_percent =  (exit_price/ (entry_price/100) ) - 100
-            profit = ((final_balance/100) * profit_percent)
-            final_balance = final_balance + profit
+
+            #profit_percent =  (exit_price/ (entry_price/100) ) - 100
+            #profit = ((final_balance/100) * profit_percent)
+
+            #calculate PROfit better right way (special number means percentage described as x/100 eg. 20% as 0.20 in code)
+            #get trade return in special form by removing 100 from percent increase formula
+            trade_return = (exit_price - entry_price) / entry_price
+            #get fee in the special form and subtract from trade return since both in special form
+            fees = fee_rate * 2
+            net_return = trade_return - fees
+            #change the net_return which is profit percent in special form into number form eg. 0.20 to 20%
+            profit_percent = net_return * 100
+            #calcualte profit amount using speical number which can be used to fnid percentage directly just by multiplying
+            profit = final_balance * net_return
+            final_balance += profit
+
             in_position = False
             total_trades+=1
             if profit_percent > 0:
