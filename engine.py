@@ -1,15 +1,35 @@
 import src.loader as loader
 import src.processor as processor
 import matplotlib.pyplot as plt
+import src.utils as utils
+from pathlib import Path
+import downloader as downloader
+import pandas as pd
+def check_data():
+    downloading = True
+    five_min = Path("data_shelf/5m")
+    one_hour = Path("data_shelf/1h")
 
+    five_min_exists = five_min.exists() and any(five_min.glob("*.csv"))
+    one_hour_exists = one_hour.exists() and any(one_hour.glob("*.csv"))
+
+    if not five_min_exists or not one_hour_exists:
+        print("No market data found. Downloading...")
+        downloader.download_data()
+        return downloading
 
 def calculate(start_date, end_date, config):
-    df_5m, df_1h = loader.load_data(start_date, end_date)
-    df_data = processor.process(df_5m, df_1h)
 
     fee_rate = config["fee_rate"]
     slippage = config["slippage"]
     initial_balance = config["initial_balance"]
+    fast = config["fast"]
+    slow = config["slow"]
+    _1h = config["_1h"]
+    df_5m, df_1h = loader.load_data(start_date, end_date)
+    df_data = processor.process(df_5m, df_1h)
+    df_data = utils.add_indicators(df_data, fast, slow ,_1h)
+    
 
     total_trades = 0
     in_position = False
@@ -34,7 +54,8 @@ def calculate(start_date, end_date, config):
         candle_0 = df_data.iloc[i - 2]  # Previous
         candle_1 = df_data.iloc[i -1]      # previous
         candle_2 = df_data.iloc[i]  #current
-
+        if pd.isna(candle_1["ema_1h"]):
+            continue
         #print("boo")
         #print(candle_0, candle_1 , candle_2)
         
@@ -43,7 +64,7 @@ def calculate(start_date, end_date, config):
 
         is_bullish_1h = candle_1["close_1h"] > candle_1["ema_1h"]
 
-        if ema_crossed_up and (candle_1["RSI"] > 60) and not in_position :#and is_bullish_1h:
+        if ema_crossed_up and (candle_1["RSI"] > 60) and not in_position and is_bullish_1h:
             #The buying
             entry_price = candle_2["open_5m"]* (1 + slippage)
 
@@ -92,7 +113,7 @@ def calculate(start_date, end_date, config):
 
     #plt.figure(figsize=(12, 6))
     #plt.plot(time_history, balance_history, marker='o', linestyle='-', color='b')
-    #plt.title('Backtest Strategy Balance Over Time')
+    #plt.title('Backtest data Balance Over Time')
     #plt.xlabel('Time')
     #plt.ylabel('Balance')
     #plt.tight_layout()
@@ -121,9 +142,9 @@ def calculate(start_date, end_date, config):
 
 if __name__ == "__main__":
 
-    times, balances, stats = calculate(
-        "2023-04-06",
-        "2024-05-07"
-    )
+    #times, balances, stats = calculate(
+    #    "2023-04-06",
+    #    "2024-05-07",
+    #)
 
-    print(stats)
+    check_data()

@@ -1,5 +1,8 @@
 {
     "fee_rate": 0.0005,
     "slippage": 0.0002,
-    "initial_balance": 1000
-}
+    "initial_balance": 1000,
+    "fast": 5,
+    "slow": 15,
+    "_1h": 10
+}   

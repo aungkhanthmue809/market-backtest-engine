@@ -37,12 +37,12 @@ with open("config.json", "r") as file:
 
 if run:
     start = time.time()
-
+    
     with st.spinner("Running backtest..."):
 
         # Reload engine.py so changes apply without restarting Streamlit
         importlib.reload(engine)
-
+        downloading = engine.check_data()
         times, balances, stats = engine.calculate(
             start_date,
             end_date,
