@@ -5,8 +5,16 @@ import src.utils as utils
 from pathlib import Path
 import downloader as downloader
 import pandas as pd
+import json
+import src.strategies.ema_rsi as ema_rsi
+import src.strategies.market_structure as market_structure
+import src.strategies.supertrend as supertrend
+from tqdm import tqdm
+import sys
+
+"""
 def check_data():
-    downloading = True
+    
     five_min = Path("data_shelf/5m")
     one_hour = Path("data_shelf/1h")
 
@@ -16,21 +24,23 @@ def check_data():
     if not five_min_exists or not one_hour_exists:
         print("No market data found. Downloading...")
         downloader.download_data()
-        return downloading
-
+    else:
+        print("Market data found")
+"""
 def calculate(start_date, end_date, config):
+#_____adding variables
+    fee_rate = config["global"]["fee_rate"]
+    slippage = config["global"]["slippage"]
+    initial_balance = config["global"]["initial_balance"]
+    fast = config["strategy"]["parameters"]["fast"]
+    slow = config["strategy"]["parameters"]["slow"]
+    ema_1h = config["strategy"]["parameters"]["ema_1h"]
+    rsi_threshold = config["strategy"]["parameters"]["rsi_threshold"]
+    strategy = config["strategy"]["name"]
 
-    fee_rate = config["fee_rate"]
-    slippage = config["slippage"]
-    initial_balance = config["initial_balance"]
-    fast = config["fast"]
-    slow = config["slow"]
-    _1h = config["_1h"]
     df_5m, df_1h = loader.load_data(start_date, end_date)
     df_data = processor.process(df_5m, df_1h)
-    df_data = utils.add_indicators(df_data, fast, slow ,_1h)
     
-
     total_trades = 0
     in_position = False
 
@@ -50,32 +60,48 @@ def calculate(start_date, end_date, config):
     peak_balance = initial_balance
     max_drawdown = 0.0
 
-    for i in range(2, len(df_data) ):
-        candle_0 = df_data.iloc[i - 2]  # Previous
-        candle_1 = df_data.iloc[i -1]      # previous
-        candle_2 = df_data.iloc[i]  #current
-        if pd.isna(candle_1["ema_1h"]):
-            continue
+    df_data = utils.add_ema_rsi(df_data, fast, slow, ema_1h)
+    
+#checking strategy
+    if (strategy) == "ema_rsi": 
+        look_back = ema_rsi.LOOK_BACK
+    elif (strategy) == "market_structure": 
+        look_back = market_structure.LOOK_BACK
+    elif (strategy) == "supertrend": 
+        look_back = supertrend.LOOK_BACK
+
+
+#_____TRADING LOGIC LOOP
+    for i in tqdm(
+        range(look_back, len(df_data)),
+        desc=f"Backtesting {strategy}",
+        unit="candle",
+        disable=not sys.stdout.isatty()
+    ):
+        #if pd.isna(candle_1["ema_1h"]):
+        #           continue
         #print("boo")
-        #print(candle_0, candle_1 , candle_2)
+        #print(candle_0, candle_1 , df_data.iloc[i])
         
-        ema_crossed_up = (candle_0["ema_fast"] <= candle_0["ema_slow"]) and (candle_1["ema_fast"] > candle_1["ema_slow"])
-        ema_crossed_down = (candle_0["ema_fast"] >= candle_0["ema_slow"]) and (candle_1["ema_fast"] < candle_1["ema_slow"])
+        if (strategy) == "ema_rsi": 
+                buy_condition , sell_condition = ema_rsi.ema_rsi_strategy(df_data ,i ,rsi_threshold)
+        elif (strategy) == "market_structure": 
+                buy_condition , sell_condition = market_structure.market_structure_strategy(df_data ,i )
+        elif (strategy) == "supertrend": 
+                buy_condition , sell_condition = supertrend.supertrend_strategy(df_data ,i ,rsi_threshold)
 
-        is_bullish_1h = candle_1["close_1h"] > candle_1["ema_1h"]
-
-        if ema_crossed_up and (candle_1["RSI"] > 60) and not in_position and is_bullish_1h:
+        if buy_condition and not in_position :
             #The buying
-            entry_price = candle_2["open_5m"]* (1 + slippage)
+            entry_price = df_data.iloc[i]["open_5m"]* (1 + slippage)
 
-            print(f"entry price: {entry_price}")
+            #print(f"entry price: {entry_price}")
             in_position = True
 
-        elif ema_crossed_down and in_position :#and not is_bullish_1h:
+        elif sell_condition and in_position :#and not is_bullish_1h:
             #THE selling
-            exit_price = candle_2["open_5m"] * (1 - slippage)
+            exit_price = df_data.iloc[i]["open_5m"] * (1 - slippage)
 
-            print(f"exit price: {exit_price}")
+            #print(f"exit price: {exit_price}")
 
             #profit_percent =  (exit_price/ (entry_price/100) ) - 100
             #profit = ((final_balance/100) * profit_percent)
@@ -109,8 +135,44 @@ def calculate(start_date, end_date, config):
             if drawdown > max_drawdown:
                 max_drawdown = drawdown
                         
-            time_history.append(candle_2["open_time"])
+            time_history.append(df_data.iloc[i]["open_time"])
+        
+    if in_position:
+        # sell at the last candle
+        exit_price = df_data.iloc[-1]["open_5m"] * (1 - slippage)
 
+        print(f"final exit price: {exit_price}")
+
+        trade_return = (exit_price - entry_price) / entry_price
+
+        fees = fee_rate * 2
+        net_return = trade_return - fees
+
+        profit_percent = net_return * 100
+
+        profit = final_balance * net_return
+        final_balance += profit
+
+        in_position = False
+        total_trades += 1
+
+        if profit_percent > 0:
+            winning_trades += 1
+            gross_profit += profit
+        elif profit_percent < 0:
+            losing_trades += 1
+            gross_loss -= profit
+
+        balance_history.append(final_balance)
+        time_history.append(df_data.iloc[-1]["open_time"])
+
+        if final_balance > peak_balance:
+            peak_balance = final_balance
+
+        drawdown = ((peak_balance - final_balance) / peak_balance) * 100
+
+        if drawdown > max_drawdown:
+            max_drawdown = drawdown
     #plt.figure(figsize=(12, 6))
     #plt.plot(time_history, balance_history, marker='o', linestyle='-', color='b')
     #plt.title('Backtest data Balance Over Time')
@@ -137,14 +199,17 @@ def calculate(start_date, end_date, config):
 
         "maximum_drawdown": max_drawdown
     }
-
+    
     return time_history, balance_history, stats
 
 if __name__ == "__main__":
+    with open("config.json", "r") as f:
+        config = json.load(f)
+    times, balances, stats = calculate(
+        "2023-04-06",
+        "2024-05-07",
+        config
+    )
+    print(stats)
 
-    #times, balances, stats = calculate(
-    #    "2023-04-06",
-    #    "2024-05-07",
-    #)
-
-    check_data()
+    

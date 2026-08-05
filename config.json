@@ -1,8 +1,18 @@
 {
-    "fee_rate": 0.0005,
-    "slippage": 0.0002,
-    "initial_balance": 1000,
-    "fast": 5,
-    "slow": 15,
-    "_1h": 10
-}   
+    "global": {
+        "fee_rate": 0.0005,
+        "slippage": 0.0002,
+        "initial_balance": 1000
+    },
+
+    "strategy": {
+        "name": "market_structure",
+
+        "parameters": {
+            "fast": 12,
+            "slow": 26,
+            "ema_1h": 50,
+            "rsi_threshold": 60
+        }
+    }
+}

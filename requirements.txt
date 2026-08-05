@@ -1,0 +1,7 @@
+pandas
+matplotlib
+requests
+python-dateutil
+streamlit
+win11toast
+tqdm

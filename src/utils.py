@@ -1,4 +1,4 @@
-def add_indicators(df_data , fast ,slow , _1h):
+def add_ema_rsi(df_data , fast ,slow , _1h):
     #calculate EMA
     df_data["ema_fast"] = df_data["close_5m"].ewm(span=fast, adjust=False).mean()
     df_data["ema_slow"] = df_data["close_5m"].ewm(span=slow, adjust=False).mean()

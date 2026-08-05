@@ -1,19 +1,24 @@
 import zipfile
 import csv
 import os
+import shutil
 from pathlib import Path
 from datetime import date
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 from dateutil.relativedelta import relativedelta
 
-def download_data():
-    SYMBOL = "BTCUSDT"
+def download_data(symbol="BTC"):
+    SYMBOL = f"{symbol.upper()}USDT"
     INTERVALS = ["5m", "1h"]
 
     DOWNLOAD_DIR = Path("data_shelf")
 
     WORKERS = 8
+
+    if DOWNLOAD_DIR.exists():
+        print(f"Clearing {DOWNLOAD_DIR}...")
+        shutil.rmtree(DOWNLOAD_DIR)
 
     DOWNLOAD_DIR.mkdir(exist_ok=True)
 
@@ -273,6 +278,6 @@ def download_data():
                         f"[THREAD ERROR] {e}"
                     )
     print("\nAll downloads and extractions finished.")
-if   __name__ == "__main__":
+if __name__ == "__main__":
     download_data()
 

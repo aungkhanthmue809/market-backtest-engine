@@ -37,7 +37,13 @@ def load_data(start_date , end_date):
         df= pd.read_csv(file, header=None, names=columns)
         dfs_1h.append(df)
     df_1h = pd.concat(dfs_1h ,ignore_index=True)
-        
+
+    #format to fit vconversion
+    for df in [df_1h, df_5m]:
+        for col in ["open_time", "close_time"]:
+            df[col] = df[col].astype("int64")
+            df.loc[df[col] >= 10**15, col] //= 1000
+
     #unit conversion for proper calculations and dispaly
     df_1h["open_time"] = pd.to_datetime(df_1h["open_time"] ,unit="ms")
     df_5m["open_time"] = pd.to_datetime(df_5m["open_time"] ,unit="ms")
@@ -63,6 +69,15 @@ def load_data(start_date , end_date):
     
     return filtered_df_5m,filtered_df_1h
 
+
+if __name__ == "__main__":
+    start_date = input("Enter start date (YYYY-MM-DD): ")
+    end_date = input("Enter end date (YYYY-MM-DD): ")
+    df_5m, df_1h = load_data(start_date, end_date)
+    print("5-minute data:")
+    print(df_5m.head())
+    print("\n1-hour data:")
+    print(df_1h.head())
 
 
 

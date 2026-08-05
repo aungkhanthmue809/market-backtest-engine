@@ -1,0 +1,6 @@
+data_shelf/
+__pycache__/
+*.pyc
+.venv/
+optimise.py
+src/strategies/supertrend.py
