@@ -8,7 +8,7 @@ import pandas as pd
 import json
 import src.strategies.ema_rsi as ema_rsi
 import src.strategies.market_structure as market_structure
-import src.strategies.supertrend as supertrend
+#import src.strategies.supertrend as supertrend
 from tqdm import tqdm
 import sys
 
@@ -87,8 +87,8 @@ def calculate(start_date, end_date, config):
                 buy_condition , sell_condition = ema_rsi.ema_rsi_strategy(df_data ,i ,rsi_threshold)
         elif (strategy) == "market_structure": 
                 buy_condition , sell_condition = market_structure.market_structure_strategy(df_data ,i )
-        elif (strategy) == "supertrend": 
-                buy_condition , sell_condition = supertrend.supertrend_strategy(df_data ,i ,rsi_threshold)
+        #elif (strategy) == "supertrend": 
+        #       buy_condition , sell_condition = supertrend.supertrend_strategy(df_data ,i ,rsi_threshold)
 
         if buy_condition and not in_position :
             #The buying

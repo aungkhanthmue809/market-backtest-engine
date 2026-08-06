@@ -6,7 +6,7 @@
     },
 
     "strategy": {
-        "name": "market_structure",
+        "name": "ema_rsi",
 
         "parameters": {
             "fast": 12,
