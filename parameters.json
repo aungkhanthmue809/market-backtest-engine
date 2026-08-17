@@ -1,0 +1,16 @@
+{
+    "ema_rsi" :{
+        "ema_fast": 12,
+        "ema_slow": 26,
+        "ema_1h": 60,
+        "rsi_threshold": 60,
+        "look_back":2
+        },
+
+    "market_structure" : {
+    "look_back": 50,
+    "swing_window" : 4,
+    "swing_count" : 3,
+    "rr_ratio" : 4
+    }
+}

@@ -6,48 +6,48 @@ from pathlib import Path
 import downloader as downloader
 import pandas as pd
 import json
+import time
 import src.strategies.ema_rsi as ema_rsi
 import src.strategies.market_structure as market_structure
-#import src.strategies.supertrend as supertrend
 from tqdm import tqdm
-import sys
 
-"""
-def check_data():
+def calculate(start_date, end_date, config, parameters=None, df_data=None):
+    #important to include none
+    if parameters is None:
+        with open("parameters.json", "r") as f:
+            parameters = json.load(f)
     
-    five_min = Path("data_shelf/5m")
-    one_hour = Path("data_shelf/1h")
-
-    five_min_exists = five_min.exists() and any(five_min.glob("*.csv"))
-    one_hour_exists = one_hour.exists() and any(one_hour.glob("*.csv"))
-
-    if not five_min_exists or not one_hour_exists:
-        print("No market data found. Downloading...")
-        downloader.download_data()
-    else:
-        print("Market data found")
-"""
-def calculate(start_date, end_date, config):
-#_____adding variables
     fee_rate = config["global"]["fee_rate"]
     slippage = config["global"]["slippage"]
     initial_balance = config["global"]["initial_balance"]
-    fast = config["strategy"]["parameters"]["fast"]
-    slow = config["strategy"]["parameters"]["slow"]
-    ema_1h = config["strategy"]["parameters"]["ema_1h"]
-    rsi_threshold = config["strategy"]["parameters"]["rsi_threshold"]
-    strategy = config["strategy"]["name"]
+    strategy = config["strategy"]
+    rr_ratio = parameters["market_structure"]["rr_ratio"] 
 
-    df_5m, df_1h = loader.load_data(start_date, end_date)
-    df_data = processor.process(df_5m, df_1h)
+#checking strategy and passing parameters
+    if (strategy) == "ema_rsi": 
+        look_back = parameters["ema_rsi"]["look_back"]
+
+    elif (strategy) == "market_structure": 
+        look_back = parameters["market_structure"]["look_back"]
+        
+    if df_data is None:
+        df_ltf, df_htf = loader.load_data(start_date, end_date)
+        df_data = processor.process(df_ltf, df_htf)
     
     total_trades = 0
     in_position = False
 
+    #pull price columns into numpy arrays once; iloc row access inside the loop is very slow
+    open_ltf = df_data["open_ltf"].to_numpy(dtype=float)
+    high_ltf = df_data["high_ltf"].to_numpy(dtype=float)
+    low_ltf = df_data["low_ltf"].to_numpy(dtype=float)
+    open_time = df_data["open_time"].to_numpy()
+
     final_balance = initial_balance
     balance_history = [final_balance]
-    time_history = [df_data.iloc[2]["open_time"]]
-
+    time_history = [open_time[look_back]]
+    sl = 0
+    tp = 0
     profit = 0
     entry_price = 0
 
@@ -59,87 +59,83 @@ def calculate(start_date, end_date, config):
 
     peak_balance = initial_balance
     max_drawdown = 0.0
-
-    df_data = utils.add_ema_rsi(df_data, fast, slow, ema_1h)
     
-#checking strategy
-    if (strategy) == "ema_rsi": 
-        look_back = ema_rsi.LOOK_BACK
-    elif (strategy) == "market_structure": 
-        look_back = market_structure.LOOK_BACK
-    elif (strategy) == "supertrend": 
-        look_back = supertrend.LOOK_BACK
-
-
 #_____TRADING LOGIC LOOP
     for i in tqdm(
-        range(look_back, len(df_data)),
+        range(look_back+1, len(df_data)),
         desc=f"Backtesting {strategy}",
         unit="candle",
-        disable=not sys.stdout.isatty()
     ):
-        #if pd.isna(candle_1["ema_1h"]):
-        #           continue
-        #print("boo")
-        #print(candle_0, candle_1 , df_data.iloc[i])
         
         if (strategy) == "ema_rsi": 
-                buy_condition , sell_condition = ema_rsi.ema_rsi_strategy(df_data ,i ,rsi_threshold)
+                buy_condition , sell_condition = ema_rsi.ema_rsi_strategy(df_data ,i ,parameters)
         elif (strategy) == "market_structure": 
-                buy_condition , sell_condition = market_structure.market_structure_strategy(df_data ,i )
-        #elif (strategy) == "supertrend": 
-        #       buy_condition , sell_condition = supertrend.supertrend_strategy(df_data ,i ,rsi_threshold)
+                buy_condition , sell_condition = market_structure.market_structure_strategy(df_data ,i ,parameters)
 
-        if buy_condition and not in_position :
+        if (buy_condition and not in_position)  :
             #The buying
-            entry_price = df_data.iloc[i]["open_5m"]* (1 + slippage)
+            entry_price = open_ltf[i] * (1 + slippage)
 
+            risk =  entry_price * 0.02
+            reward = risk * rr_ratio
+            sl = entry_price - risk
+            tp = entry_price + reward
             #print(f"entry price: {entry_price}")
             in_position = True
 
-        elif sell_condition and in_position :#and not is_bullish_1h:
-            #THE selling
-            exit_price = df_data.iloc[i]["open_5m"] * (1 - slippage)
+        elif in_position:
 
-            #print(f"exit price: {exit_price}")
+            high = high_ltf[i]
+            low = low_ltf[i]
+            open_price = open_ltf[i]
 
-            #profit_percent =  (exit_price/ (entry_price/100) ) - 100
-            #profit = ((final_balance/100) * profit_percent)
+            exit_price = None
 
-            #calculate PROfit better right way (special number means percentage described as x/100 eg. 20% as 0.20 in code)
-            #get trade return in special form by removing 100 from percent increase formula
-            trade_return = (exit_price - entry_price) / entry_price
-            #get fee in the special form and subtract from trade return since both in special form
-            fees = fee_rate * 2
-            net_return = trade_return - fees
-            #change the net_return which is profit percent in special form into number form eg. 0.20 to 20%
-            profit_percent = net_return * 100
-            #calcualte profit amount using speical number which can be used to fnid percentage directly just by multiplying
-            profit = final_balance * net_return
-            final_balance += profit
+            if low <= sl:
+                exit_price = sl * (1 - slippage)
 
-            in_position = False
-            total_trades+=1
-            if profit_percent > 0:
-                winning_trades+=1
-                gross_profit += profit
-            elif profit_percent < 0:
-                losing_trades+=1
-                gross_loss -= profit
-            balance_history.append(final_balance)
-            if final_balance > peak_balance:
-                peak_balance = final_balance
+            elif high >= tp:
+                exit_price = tp * (1 - slippage)
 
-            drawdown = ((peak_balance - final_balance) / peak_balance) * 100
+            elif sell_condition:
+                exit_price = open_price * (1 - slippage)
 
-            if drawdown > max_drawdown:
-                max_drawdown = drawdown
-                        
-            time_history.append(df_data.iloc[i]["open_time"])
-        
+            if exit_price is not None:
+
+                trade_return = (exit_price - entry_price) / entry_price
+
+                fees = fee_rate * 2
+                net_return = trade_return - fees
+
+                profit_percent = net_return * 100
+                profit = final_balance * net_return
+                final_balance += profit
+
+                in_position = False
+
+                total_trades += 1
+
+                if profit_percent >= 0:
+                    winning_trades += 1
+                    gross_profit += profit
+                else:
+                    losing_trades += 1
+                    gross_loss -= profit
+
+                balance_history.append(final_balance)
+
+                if final_balance > peak_balance:
+                    peak_balance = final_balance
+
+                drawdown = ((peak_balance - final_balance) / peak_balance) * 100
+
+                if drawdown > max_drawdown:
+                    max_drawdown = drawdown
+
+                time_history.append(open_time[i])
     if in_position:
         # sell at the last candle
-        exit_price = df_data.iloc[-1]["open_5m"] * (1 - slippage)
+        exit_price = open_ltf[-1] * (1 - slippage)
 
         print(f"final exit price: {exit_price}")
 
@@ -156,7 +152,7 @@ def calculate(start_date, end_date, config):
         in_position = False
         total_trades += 1
 
-        if profit_percent > 0:
+        if profit_percent >= 0:
             winning_trades += 1
             gross_profit += profit
         elif profit_percent < 0:
@@ -164,7 +160,7 @@ def calculate(start_date, end_date, config):
             gross_loss -= profit
 
         balance_history.append(final_balance)
-        time_history.append(df_data.iloc[-1]["open_time"])
+        time_history.append(open_time[-1])
 
         if final_balance > peak_balance:
             peak_balance = final_balance
@@ -173,16 +169,9 @@ def calculate(start_date, end_date, config):
 
         if drawdown > max_drawdown:
             max_drawdown = drawdown
-    #plt.figure(figsize=(12, 6))
-    #plt.plot(time_history, balance_history, marker='o', linestyle='-', color='b')
-    #plt.title('Backtest data Balance Over Time')
-    #plt.xlabel('Time')
-    #plt.ylabel('Balance')
-    #plt.tight_layout()
-    #plt.show()
-    #print(final_balance)
-    
+
     stats = {
+        "parameters" : parameters[strategy],
         "initial_balance": initial_balance,
         "final_balance": final_balance,
         "net_profit": final_balance - initial_balance,
@@ -199,17 +188,51 @@ def calculate(start_date, end_date, config):
 
         "maximum_drawdown": max_drawdown
     }
-    
+    #print(stats)
     return time_history, balance_history, stats
 
 if __name__ == "__main__":
     with open("config.json", "r") as f:
         config = json.load(f)
+
+    start_date = "2024-04-06"
+    end_date = "2026-05-07"
+
+    start = time.time()
     times, balances, stats = calculate(
-        "2023-04-06",
-        "2024-05-07",
+        start_date,
+        end_date,
         config
     )
-    print(stats)
+    elapsed_time = time.time() - start
+    
+
+    results_file = "results/backtest_results.json"
+
+    new_result = {
+        "start_date": start_date,
+        "end_date": end_date,
+        "time_taken_seconds": round(elapsed_time, 2),
+        "statistics": stats
+    }
+
+    try:
+        with open(results_file, "r") as file:
+            old_results = json.load(file)
+
+        if isinstance(old_results, dict):
+            old_results = [old_results]
+
+    except (FileNotFoundError, json.JSONDecodeError):
+        old_results = []
+
+    old_results.append(new_result)
+    old_results = old_results[-10:]
+
+    with open(results_file, "w") as file:
+        json.dump(old_results, file, indent=4)
+
+    print(f"Results appended to {results_file}")
+    print(new_result)
 
     

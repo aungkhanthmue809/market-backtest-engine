@@ -1,10 +1,10 @@
-def add_ema_rsi(df_data , fast ,slow , _1h):
+def add_ema_rsi(df_data , fast ,slow , _htf):
     #calculate EMA
-    df_data["ema_fast"] = df_data["close_5m"].ewm(span=fast, adjust=False).mean()
-    df_data["ema_slow"] = df_data["close_5m"].ewm(span=slow, adjust=False).mean()
-    df_data["ema_1h"] = df_data["close_1h"].ewm(span=_1h, adjust=False).mean()
+    df_data["ema_fast"] = df_data["close_ltf"].ewm(span=fast, adjust=False).mean()
+    df_data["ema_slow"] = df_data["close_ltf"].ewm(span=slow, adjust=False).mean()
+    df_data["ema_htf"] = df_data["close_htf"].ewm(span=_htf, adjust=False).mean()
     #calculate RSI
-    delta = df_data["close_5m"].diff()
+    delta = df_data["close_ltf"].diff()
     # 1. define period
     period = 14
     # 2. Separate gains and losses

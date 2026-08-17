@@ -1,49 +1,49 @@
- #still dont know what pylance did here
 import pandas as pd
 
-def process(df_5m ,df_1h):
+def process(df_ltf ,df_htf):
     
+    df_ltf["lookup_htf_time"] = df_ltf["open_time"].dt.floor("h") - pd.Timedelta(hours=1)
 
-    df_5m["lookup_1h_time"] = df_5m["open_time"].dt.floor("h") - pd.Timedelta(hours=1)
-
-        # Rename 1h columns to avoid conflicts
-    df_1h = df_1h.rename(columns={
-        "open_time": "lookup_1h_time",
-        "open": "open_1h",
-        "high": "high_1h",
-        "low": "low_1h",
-        "close": "close_1h"
+        # Rename htf columns to avoid conflicts
+    df_htf = df_htf.rename(columns={
+        "open_time": "lookup_htf_time",
+        "open": "open_htf",
+        "high": "high_htf",
+        "low": "low_htf",
+        "close": "close_htf"
     })
 
     # Merge
-    df_strategy = df_5m.merge(
-        df_1h[
+    df_strategy = df_ltf.merge(
+        df_htf[
             [
-                "lookup_1h_time",
-                "open_1h",
-                "high_1h",
-                "low_1h",
-                "close_1h"
+                "lookup_htf_time",
+                "open_htf",
+                "high_htf",
+                "low_htf",
+                "close_htf"
                 
             ]
         ],
-        on="lookup_1h_time",
+        on="lookup_htf_time",
         how="left"
     )
 
+    df_strategy = df_strategy.dropna(subset=["close_htf"])
+
     # Keep exact output format
     df_strategy = df_strategy.rename(columns={
-        "open": "open_5m",
-        "high": "high_5m",
-        "low": "low_5m",
-        "close": "close_5m"
+        "open": "open_ltf",
+        "high": "high_ltf",
+        "low": "low_ltf",
+        "close": "close_ltf"
     })
 
     return df_strategy
 
 if __name__ == "__main__":
     import loader as loader
-    df_5m,df_1h = loader.load_data("2023-4-6","2023-4-7")
-    df_strategy = process(df_5m,df_1h)
+    df_ltf,df_htf = loader.load_data("2023-4-6","2023-4-7")
+    df_strategy = process(df_ltf,df_htf)
     
-    print(df_strategy)
+    print(df_strategy.iloc[50])

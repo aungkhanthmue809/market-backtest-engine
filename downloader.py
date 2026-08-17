@@ -10,7 +10,8 @@ from dateutil.relativedelta import relativedelta
 
 def download_data(symbol="BTC"):
     SYMBOL = f"{symbol.upper()}USDT"
-    INTERVALS = ["5m", "1h"]
+    INTERVALS = ["15m", "1h"]
+    FOLDER_NAMES = {"15m": "ltf", "1h": "htf"}
 
     DOWNLOAD_DIR = Path("data_shelf")
 
@@ -113,7 +114,7 @@ def download_data(symbol="BTC"):
             f"{SYMBOL}/{interval}/{zip_filename}"
         )
 
-        output_dir = DOWNLOAD_DIR / interval
+        output_dir = DOWNLOAD_DIR / FOLDER_NAMES[interval]
         output_dir.mkdir(exist_ok=True)
 
         zip_path = output_dir / zip_filename
