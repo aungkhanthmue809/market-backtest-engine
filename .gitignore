@@ -2,4 +2,4 @@ data_shelf/
 __pycache__/
 *.pyc
 .venv/
-optimise.py
+optimiser.py
