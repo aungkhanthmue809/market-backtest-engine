@@ -1,6 +1,6 @@
 # Asset Backtester
 
-A crypto backtesting engine built around Binance's public historical data. It downloads kline data, processes it into lower and higher timeframe frames, runs a strategy over it, and shows the results in a Streamlit dashboard.
+A asset backtesting engine built around public historical data. It downloads kline data, processes it into lower and higher timeframe frames, runs a strategy over it, and shows the results in a Streamlit dashboard.
 
 The point of this repo is the engine, not the strategies. Anyone can slot their own strategy into `src/strategies/` and run it — the downloader, loader, trade loop and reporting are all generic.
 
